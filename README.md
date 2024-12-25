@@ -1,48 +1,28 @@
-# Live XAUUSD Gold Price Tracker
+# Gold Tracker Application
 
-## Overview
-A professional-grade web application that provides real-time gold (XAUUSD) price tracking, historical data analysis, and market insights. Deployed on Google Cloud Run with automatic scaling and high availability.
+Live XAUUSD (Gold) Price Tracker with real-time updates, historical charts, and market analysis.
 
-## Live Demo
-Visit [Gold Tracker on Cloud Run](https://gold-tracker2-i3pnera4eq-uc.a.run.app)
+## Project Overview
 
-## Features
-- Real-time gold price tracking with FCS API integration
-- Historical price data with interactive charts
-- Market analysis and trading signals
-- News feed with market impact analysis
+This application provides:
+- Real-time XAUUSD price updates
+- Historical price charts
+- Market news with impact analysis
 - Responsive design for all devices
-- Cloud-based caching for optimal performance
-- Automatic failover with fallback data
-
-## Technologies
-- **Backend**: Python 3.11, Flask
-- **Frontend**: HTML5, JavaScript, Bootstrap
-- **APIs**: 
-  - FCS API (real-time prices)
-  - Finnhub (market news)
-- **Cloud Infrastructure**:
-  - Google Cloud Run
-  - Google Cloud Storage
-  - Google Cloud Build
-
-## Prerequisites
-- Python 3.11+
-- pip (Python package manager)
-- Google Cloud SDK
-- Docker (for local container testing)
 
 ## Local Development Setup
+
 1. Clone the repository:
 ```bash
-git clone <your-repo-url>
-cd XAUUSD-local
+git clone https://github.com/clickeon/gold-tracker.git
+cd gold-tracker
 ```
 
-2. Create a virtual environment:
+2. Create and activate virtual environment:
 ```bash
 python -m venv venv
-source venv/bin/activate  # On Windows use `venv\Scripts\activate`
+.\venv\Scripts\activate  # Windows
+source venv/bin/activate  # Linux/Mac
 ```
 
 3. Install dependencies:
@@ -53,50 +33,120 @@ pip install -r requirements.txt
 4. Set up environment variables:
 ```bash
 cp .env.example .env
-# Edit .env with your API keys and configuration
+# Edit .env with your API keys
 ```
 
 5. Run locally:
 ```bash
 python app.py
 ```
-Visit `http://localhost:5010` in your browser
+Access at http://localhost:5010
 
-## Docker Development
-Build and run with Docker:
-```bash
-docker build -t gold-tracker .
-docker run -p 8080:8080 gold-tracker
-```
+## Deployment Configuration
 
-## Cloud Deployment
-Deploy to Google Cloud Run:
-```bash
-# Build the container
-gcloud builds submit --tag gcr.io/crypto-canyon-426117-i3/gold-tracker2
+### Google Cloud Setup
 
-# Deploy to Cloud Run
-gcloud run deploy gold-tracker2 \
-    --image gcr.io/crypto-canyon-426117-i3/gold-tracker2 \
-    --platform managed \
-    --region us-central1 \
-    --project crypto-canyon-426117-i3 \
-    --allow-unauthenticated
-```
+1. Create a Google Cloud Project:
+   - Project ID: crypto-canyon-426117-i3
+   - Region: us-central1
+   - Service: gold-tracker2
 
-## Environment Variables
-Required environment variables:
-- `FCS_API_KEY`: API key for FCS
-- `FINNHUB_API_KEY`: API key for Finnhub
-- `GOOGLE_CLOUD_PROJECT`: Your GCP project ID
-- `GOOGLE_CLOUD_REGION`: GCP region (default: us-central1)
+2. Create Service Account for GitHub Actions:
+   - Name: github-actions-deployer
+   - Email: github-actions-deployer@crypto-canyon-426117-i3.iam.gserviceaccount.com
 
-## Contributing
-1. Fork the repository
-2. Create a feature branch
-3. Commit your changes
-4. Push to the branch
-5. Create a Pull Request
+3. Required IAM Roles:
+   - Cloud Run Admin
+   - Storage Admin
+   - Service Account User
+   - Service Account Token Creator
+   - Cloud Run Service Agent
+   - Cloud Build Editor
 
-## License
-MIT License - see LICENSE file for details
+### GitHub Repository Setup
+
+1. Create GitHub Repository:
+   - Name: gold-tracker
+   - URL: https://github.com/clickeon/gold-tracker
+
+2. Configure GitHub Secrets:
+   - Name: GCP_SA_KEY
+   - Value: Service account JSON key
+   - Path: Settings → Secrets → Actions → New repository secret
+
+### Deployment Files
+
+1. GitHub Actions Workflow (.github/workflows/deploy.yml):
+   - Builds Docker container
+   - Pushes to Google Container Registry
+   - Deploys to Cloud Run
+   - Configured with service account authentication
+
+2. Dockerfile:
+   - Python base image
+   - Installs dependencies
+   - Configures environment
+   - Exposes port 5010
+
+3. Cloud Run Configuration:
+   - Service name: gold-tracker2
+   - Region: us-central1
+   - Allow unauthenticated access
+   - Uses custom service account
+
+## Deployment Process
+
+1. Local Development:
+   - Make changes
+   - Test locally at http://localhost:5010
+   - Commit changes
+
+2. Automatic Deployment:
+   ```bash
+   git add .
+   git commit -m "your changes"
+   git push
+   ```
+   GitHub Actions will automatically:
+   - Build new container
+   - Deploy to Cloud Run
+   - Update live service
+
+3. Monitor Deployments:
+   - GitHub Actions: https://github.com/clickeon/gold-tracker/actions
+   - Cloud Run Console: https://console.cloud.google.com/run
+
+## API Keys Required
+
+1. Alpha Vantage API:
+   - Used for: Real-time gold prices
+   - Get key: https://www.alphavantage.co/support/#api-key
+
+2. Finnhub API (optional):
+   - Used for: Market news
+   - Get key: https://finnhub.io/register
+
+## Maintenance
+
+- Monitor API usage limits
+- Check Cloud Run logs for errors
+- Update dependencies regularly
+- Review GitHub Actions workflow runs
+
+## Troubleshooting
+
+1. Deployment Issues:
+   - Check GitHub Actions logs
+   - Verify service account permissions
+   - Ensure secrets are properly set
+
+2. API Issues:
+   - Verify API keys in .env
+   - Check API rate limits
+   - Monitor response formats
+
+## Contact
+
+For support or contributions:
+- GitHub: @clickeon
+- Email: daniel@clickeon.com
