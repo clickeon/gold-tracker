@@ -12,6 +12,7 @@ env:
   PROJECT_ID: crypto-canyon-426117-i3
   REGION: us-central1
   SERVICE: gold-tracker2
+  SERVICE_ACCOUNT: github-actions-deployer@crypto-canyon-426117-i3.iam.gserviceaccount.com
 
 jobs:
   deploy:
@@ -26,6 +27,7 @@ jobs:
       uses: google-github-actions/auth@v2
       with:
         credentials_json: '${{ secrets.GCP_SA_KEY }}'
+        service_account: ${{ env.SERVICE_ACCOUNT }}
 
     - name: Set up Cloud SDK
       uses: google-github-actions/setup-gcloud@v2.1.2
@@ -46,4 +48,5 @@ jobs:
           --image gcr.io/${{ env.PROJECT_ID }}/${{ env.SERVICE }}:${{ github.sha }} \
           --region ${{ env.REGION }} \
           --platform managed \
+          --service-account ${{ env.SERVICE_ACCOUNT }} \
           --allow-unauthenticated
