@@ -1,0 +1,20 @@
+runtime: python311
+service: gold-tracker2
+project_id: crypto-canyon-426117-i3
+
+env_variables:
+  PYTHON_ENV: "production"
+  GOOGLE_CLOUD_PROJECT: "crypto-canyon-426117-i3"
+  GOOGLE_CLOUD_REGION: "us-central1"
+
+automatic_scaling:
+  target_cpu_utilization: 0.65
+  min_instances: 1
+  max_instances: 10
+
+resources:
+  cpu: 1
+  memory_gb: 0.5
+  disk_size_gb: 10
+
+entrypoint: gunicorn -b :$PORT app:app

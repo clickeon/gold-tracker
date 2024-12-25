@@ -1,0 +1,494 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>XAUUSD Live Gold Price Tracker</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <style>
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
+            background-color: #f8f9fa;
+            min-height: 100vh;
+            position: relative;
+            padding-bottom: 120px;
+        }
+
+        .navbar {
+            background: linear-gradient(135deg, #1a1a1a 0%, #2d2d2d 100%);
+            padding: 1rem 0;
+        }
+
+        .navbar-brand {
+            color: #ffd700 !important;
+            font-size: 1.5rem;
+            font-weight: 700;
+        }
+
+        .navbar-brand span {
+            color: #fff;
+            font-weight: 400;
+        }
+
+        .price-container {
+            background: #fff;
+            border-radius: 10px;
+            padding: 2rem;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.05);
+            margin-bottom: 2rem;
+        }
+
+        .current-price {
+            font-size: 2.5rem;
+            font-weight: 700;
+            color: #1a1a1a;
+            margin-bottom: 0.5rem;
+        }
+
+        .price-change {
+            font-size: 1.1rem;
+            font-weight: 500;
+        }
+
+        .price-change.positive {
+            color: #28a745;
+        }
+
+        .price-change.negative {
+            color: #dc3545;
+        }
+
+        .chart-container {
+            background: #fff;
+            border-radius: 10px;
+            padding: 1.5rem;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.05);
+            margin-bottom: 2rem;
+            height: 400px;
+            width: 100%;
+        }
+
+        .news-container {
+            background: #fff;
+            border-radius: 10px;
+            padding: 1.5rem;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.05);
+            height: 400px;
+            overflow-y: auto;
+        }
+
+        .news-item {
+            padding: 1rem 0;
+            border-bottom: 1px solid #eee;
+        }
+
+        .news-item:last-child {
+            border-bottom: none;
+        }
+
+        .news-item h5 {
+            font-size: 1rem;
+            margin-bottom: 0.5rem;
+        }
+
+        .news-item p {
+            font-size: 0.9rem;
+            color: #666;
+            margin-bottom: 0.5rem;
+        }
+
+        .news-meta {
+            font-size: 0.8rem;
+            color: #999;
+        }
+
+        .footer {
+            background: #1a1a1a;
+            color: #fff;
+            padding: 2rem 0;
+            position: fixed;
+            bottom: 0;
+            width: 100%;
+        }
+
+        @media (max-width: 768px) {
+            .current-price {
+                font-size: 2rem;
+            }
+            .chart-container, .news-container {
+                height: 300px;
+            }
+            body {
+                padding-bottom: 200px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <nav class="navbar navbar-dark">
+        <div class="container">
+            <a class="navbar-brand" href="#">XAU/USD <span>Gold Price Tracker</span></a>
+            <div class="text-light">Last updated: <span id="lastUpdate">Updating...</span></div>
+        </div>
+    </nav>
+
+    <div class="container mt-4">
+        <div class="row">
+            <div class="col-md-12">
+                <div class="price-container text-center">
+                    <h1 class="mb-4">Live XAUUSD (Gold) Price</h1>
+                    <div class="current-price" id="currentPrice">Loading...</div>
+                    <div class="price-change" id="priceChange"></div>
+                </div>
+            </div>
+        </div>
+
+        <div class="row">
+            <div class="col-md-8">
+                <div class="chart-container">
+                    <canvas id="priceChart"></canvas>
+                </div>
+            </div>
+            <div class="col-md-4">
+                <div class="news-container">
+                    <h2 class="h4 mb-3">Gold Market News</h2>
+                    <div id="newsContainer">Loading news...</div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <footer class="footer">
+        <div class="container">
+            <div class="row">
+                <div class="col-md-6">
+                    <h3 class="h5">About XAUUSD Gold Price Tracker</h3>
+                    <p>Real-time gold price tracking and market news to help you make informed decisions.</p>
+                </div>
+                <div class="col-md-6 text-md-end">
+                    <p>Data updates every minute</p>
+                    <p>Last updated: <span id="footerLastUpdate">Updating...</span></p>
+                </div>
+            </div>
+        </div>
+    </footer>
+
+    <script>
+        let priceChart;
+        let lastUpdateTime = null;
+
+        function formatPrice(price) {
+            return new Intl.NumberFormat('en-US', {
+                style: 'currency',
+                currency: 'USD',
+                minimumFractionDigits: 2,
+                maximumFractionDigits: 2
+            }).format(price);
+        }
+
+        function updatePrice() {
+            const priceElement = document.getElementById('currentPrice');
+            const updateElement = document.getElementById('lastUpdate');
+            
+            priceElement.classList.add('loading');
+            
+            fetch('/get_gold_price')
+                .then(response => response.json())
+                .then(data => {
+                    if (data.status === 'success' && data.price) {
+                        priceElement.textContent = formatPrice(data.price);
+                        updateElement.textContent = `Last updated: ${new Date().toLocaleTimeString()}`;
+                        priceElement.classList.remove('loading');
+                    } else {
+                        throw new Error(data.message || 'Failed to fetch price');
+                    }
+                })
+                .catch(error => {
+                    console.error('Error fetching price:', error);
+                    priceElement.textContent = 'Error loading price';
+                    priceElement.classList.remove('loading');
+                    updateElement.textContent = 'Update failed';
+                });
+        }
+
+        function getImpactBadgeClass(impact) {
+            const classes = {
+                high: {
+                    bullish: 'bg-success',
+                    bearish: 'bg-danger'
+                },
+                medium: {
+                    bullish: 'bg-success bg-opacity-75',
+                    bearish: 'bg-danger bg-opacity-75'
+                },
+                neutral: 'bg-secondary'
+            };
+            
+            return impact.level === 'neutral' ? classes.neutral : classes[impact.level][impact.direction];
+        }
+
+        function getImpactIcon(impact) {
+            const icons = {
+                bullish: 'fa-arrow-trend-up',
+                bearish: 'fa-arrow-trend-down',
+                sideways: 'fa-arrows-left-right'
+            };
+            return icons[impact.direction];
+        }
+
+        function getConfidenceBar(confidence) {
+            const width = Math.round(confidence * 100);
+            const color = confidence > 0.7 ? 'bg-success' : confidence > 0.4 ? 'bg-warning' : 'bg-danger';
+            return `
+                <div class="progress" style="height: 4px;">
+                    <div class="progress-bar ${color}" role="progressbar" style="width: ${width}%" 
+                        aria-valuenow="${width}" aria-valuemin="0" aria-valuemax="100"></div>
+                </div>
+            `;
+        }
+
+        function updateNews() {
+            const newsContainer = document.getElementById('newsContainer');
+            
+            // Show loading state
+            newsContainer.innerHTML = `
+                <div class="text-center py-3">
+                    <div class="spinner-border text-warning" role="status">
+                        <span class="visually-hidden">Loading...</span>
+                    </div>
+                    <p class="mt-2 text-muted">Loading news...</p>
+                </div>
+            `;
+            
+            // Get the current domain
+            const domain = window.location.origin;
+            
+            fetch(`${domain}/get_gold_news`)
+                .then(response => {
+                    if (!response.ok) {
+                        throw new Error(`HTTP error! status: ${response.status}`);
+                    }
+                    return response.json();
+                })
+                .then(data => {
+                    console.log('News data:', data); // Debug log
+                    
+                    if (!data || !data.news || data.news.length === 0) {
+                        newsContainer.innerHTML = `
+                            <div class="alert alert-info text-center py-3">
+                                <i class="fas fa-info-circle me-2"></i>
+                                <p class="mb-0">No news available at the moment. Please try again later.</p>
+                            </div>
+                        `;
+                        return;
+                    }
+                    
+                    newsContainer.innerHTML = data.news.map(item => {
+                        const impact = item.impact || {
+                            level: 'neutral',
+                            direction: 'neutral',
+                            confidence: 0.5,
+                            summary: 'No impact analysis available'
+                        };
+                        
+                        const impactClass = getImpactBadgeClass(impact);
+                        const impactIcon = getImpactIcon(impact);
+                        const confidenceBar = getConfidenceBar(impact.confidence || 0.5);
+                        
+                        return `
+                            <div class="news-item mb-3 p-3 border rounded bg-white shadow-sm">
+                                <div class="d-flex justify-content-between align-items-start mb-2">
+                                    <h6 class="mb-0">
+                                        <a href="${item.link || '#'}" target="_blank" class="text-decoration-none text-dark">
+                                            ${item.title || 'No Title Available'}
+                                        </a>
+                                    </h6>
+                                    <span class="badge ${impactClass} ms-2">
+                                        <i class="fas ${impactIcon} me-1"></i>
+                                        ${(impact.direction || 'neutral').toUpperCase()}
+                                    </span>
+                                </div>
+                                <div class="d-flex justify-content-between align-items-center mb-1">
+                                    <small class="text-muted">
+                                        <i class="far fa-clock me-1"></i>
+                                        ${new Date(item.date || new Date()).toLocaleString()}
+                                        ${item.source ? `<span class="ms-2"><i class="fas fa-newspaper me-1"></i>${item.source}</span>` : ''}
+                                    </small>
+                                    <small class="text-muted">
+                                        <i class="fas fa-chart-line me-1"></i>
+                                        Impact: ${(impact.level || 'neutral').toUpperCase()}
+                                    </small>
+                                </div>
+                                <div class="mt-2">
+                                    <small class="text-muted d-block mb-1">
+                                        ${impact.summary || 'No impact analysis available'}
+                                    </small>
+                                    <div class="d-flex align-items-center mt-2">
+                                        <small class="text-muted me-2">Confidence:</small>
+                                        <div class="flex-grow-1">
+                                            ${confidenceBar}
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        `;
+                    }).join('');
+                })
+                .catch(error => {
+                    console.error('News fetch error:', error);
+                    newsContainer.innerHTML = `
+                        <div class="alert alert-danger text-center py-3">
+                            <i class="fas fa-exclamation-circle me-2"></i>
+                            <p class="mb-0">Error loading news. Please try again later.</p>
+                            <small class="text-muted">${error.message}</small>
+                        </div>
+                    `;
+                });
+        }
+
+        function updateFooterTimestamp() {
+            const footerUpdate = document.getElementById('footerLastUpdate');
+            const now = new Date();
+            footerUpdate.textContent = `Last updated: ${now.toLocaleString()}`;
+        }
+
+        function initializeChart(data) {
+            const ctx = document.getElementById('priceChart').getContext('2d');
+            
+            if (!data.prices || !Array.isArray(data.prices)) {
+                console.error('Invalid price data format');
+                return;
+            }
+            
+            const chartData = data.prices.map(p => ({
+                x: new Date(p.date + 'T00:00:00Z'),
+                y: parseFloat(p.price)
+            })).sort((a, b) => a.x - b.x);
+
+            const prices = chartData.map(p => p.y);
+            const minPrice = Math.min(...prices);
+            const maxPrice = Math.max(...prices);
+            const priceRange = maxPrice - minPrice;
+            const yMin = Math.floor(minPrice - (priceRange * 0.1));
+            const yMax = Math.ceil(maxPrice + (priceRange * 0.1));
+
+            const config = {
+                type: 'line',
+                data: {
+                    datasets: [{
+                        label: 'Gold Price (USD)',
+                        data: chartData,
+                        borderColor: '#ffd700',
+                        backgroundColor: 'rgba(255, 215, 0, 0.1)',
+                        borderWidth: 2,
+                        fill: true,
+                        tension: 0.4,
+                        pointRadius: 3,
+                        pointHoverRadius: 6
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    interaction: {
+                        intersect: false,
+                        mode: 'index'
+                    },
+                    plugins: {
+                        legend: {
+                            display: false
+                        },
+                        tooltip: {
+                            backgroundColor: 'rgba(0, 0, 0, 0.8)',
+                            titleColor: '#fff',
+                            bodyColor: '#fff',
+                            titleFont: {
+                                size: 14,
+                                weight: 'bold'
+                            },
+                            bodyFont: {
+                                size: 13
+                            },
+                            padding: 12,
+                            cornerRadius: 8,
+                            displayColors: false,
+                            callbacks: {
+                                label: function(context) {
+                                    return `Price: ${formatPrice(context.raw.y)}`;
+                                }
+                            }
+                        }
+                    },
+                    scales: {
+                        x: {
+                            type: 'time',
+                            time: {
+                                unit: 'day',
+                                displayFormats: {
+                                    day: 'MMM d'
+                                }
+                            },
+                            grid: {
+                                display: false
+                            },
+                            ticks: {
+                                maxRotation: 45,
+                                minRotation: 45,
+                                color: '#666'
+                            }
+                        },
+                        y: {
+                            min: yMin,
+                            max: yMax,
+                            grid: {
+                                color: 'rgba(0, 0, 0, 0.05)'
+                            },
+                            ticks: {
+                                callback: value => formatPrice(value),
+                                color: '#666'
+                            }
+                        }
+                    }
+                }
+            };
+
+            if (priceChart) {
+                priceChart.destroy();
+            }
+
+            try {
+                priceChart = new Chart(ctx, config);
+            } catch (error) {
+                console.error('Error creating chart:', error);
+            }
+        }
+
+        function loadHistoricalData() {
+            fetch('/get_historical_prices')
+                .then(response => response.json())
+                .then(data => {
+                    if (data.status === 'success' && Array.isArray(data.prices)) {
+                        initializeChart(data);
+                    } else {
+                        console.error('Invalid historical data format:', data);
+                    }
+                })
+                .catch(error => {
+                    console.error('Error loading historical data:', error);
+                });
+        }
+
+        // Initial load
+        loadHistoricalData();
+        updatePrice();
+        updateNews();
+        updateFooterTimestamp();
+
+        // Update intervals
+        setInterval(updatePrice, 10000);  // Update price every 10 seconds
+        setInterval(loadHistoricalData, 300000);  // Update chart every 5 minutes
+        setInterval(updateFooterTimestamp, 10000);  // Update footer timestamp every 10 seconds
+    </script>
+</body>
+</html>
